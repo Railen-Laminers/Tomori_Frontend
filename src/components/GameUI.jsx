@@ -6,12 +6,9 @@ export default function GameUI({ roomCode, playerCount: initialPlayerCount }) {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
-  const [isHoveringChat, setIsHoveringChat] = useState(false);
+  const [chatVisible, setChatVisible] = useState(true); // <-- NEW: chat visibility
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
-  const chatContainerRef = useRef(null);
-
-  const isChatActive = isHoveringChat || inputFocused;
 
   const addSystemMessage = (message) => {
     setChatMessages((prev) => [
@@ -106,79 +103,87 @@ export default function GameUI({ roomCode, playerCount: initialPlayerCount }) {
             <span className="text-white/40 text-[9px] font-share tracking-[0.15em] uppercase">people</span>
           </div>
         </div>
-        <button
-          onClick={leaveRoom}
-          className="text-red-500 hover:text-red-400 text-[11px] font-share tracking-wider uppercase transition-all px-3 py-1.5 border border-red-500/30 hover:border-red-400/60 hover:bg-red-500/10"
-        >
-          [ leave ]
-        </button>
-      </div>
-
-      {/* Chat panel with opacity */}
-      <div
-        ref={chatContainerRef}
-        onMouseEnter={() => setIsHoveringChat(true)}
-        onMouseLeave={() => setIsHoveringChat(false)}
-        className="absolute bottom-5 left-5 w-80 pointer-events-auto transition-opacity duration-300"
-        style={{ opacity: isChatActive ? 1 : 0.4 }}
-      >
-        <div className="flex items-center gap-2 mb-1.5 px-1">
-          <span className="text-[#d4a843]/70 text-[8px] font-share tracking-[0.2em] uppercase">✦ chat.log</span>
-          <div className="flex-1 h-px bg-gradient-to-r from-[#d4a843]/30 to-transparent" />
-        </div>
-
-        <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5 mb-2 pr-1 scrollbar-hide">
-          {chatMessages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`bg-[#050505]/80 border-l-2 p-2 backdrop-blur-sm hover:bg-[#0a0a0a]/90 transition-all ${msg.system ? "border-[#888]/40" : "border-[#d4a843]/40"
-                }`}
-            >
-              {!msg.system && (
-                <div
-                  className={`font-share text-[9px] tracking-wide ${msg.isMe ? "text-[#d4a843]" : "text-white/50"
-                    }`}
-                >
-                  {msg.isMe ? "➤ " : "  "}{msg.username}
-                </div>
-              )}
-              <div
-                className={`font-special text-sm mt-0.5 leading-relaxed break-words ${msg.system
-                  ? "text-white/60 italic"
-                  : "text-white/90"
-                  }`}
-              >
-                {msg.message}
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-
-        <div className="flex gap-2">
-          <input
-            ref={inputRef}
-            type="text"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendChat()}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            className={`flex-1 bg-[#050505]/90 border text-white font-special text-sm px-3 py-2 outline-none transition-all placeholder:text-white/20 ${inputFocused
-              ? "border-[#d4a843]/70 shadow-[0_0_6px_#d4a843]/20"
-              : "border-white/10"
-              }`}
-            placeholder=">_ type message..."
-            maxLength={120}
-          />
+        <div className="flex items-center gap-3">
+          {/* NEW: Chat toggle button */}
           <button
-            onClick={sendChat}
-            className="px-4 bg-[#d4a843]/10 hover:bg-[#d4a843]/20 text-[#d4a843] border border-[#d4a843]/30 font-share text-xs uppercase tracking-wider transition-all hover:shadow-[0_0_5px_#d4a843]/30"
+            onClick={() => setChatVisible((v) => !v)}
+            className="text-[#d4a843] hover:text-[#e0b85b] text-[11px] font-share tracking-wider uppercase transition-all px-3 py-1.5 border border-[#d4a843]/30 hover:border-[#d4a843]/60 hover:bg-[#d4a843]/10"
           >
-            send
+            {chatVisible ? "[ hide chat ]" : "[ show chat ]"}
+          </button>
+          <button
+            onClick={leaveRoom}
+            className="text-red-500 hover:text-red-400 text-[11px] font-share tracking-wider uppercase transition-all px-3 py-1.5 border border-red-500/30 hover:border-red-400/60 hover:bg-red-500/10"
+          >
+            [ leave ]
           </button>
         </div>
       </div>
+
+      {/* Chat panel - only rendered when visible */}
+      {chatVisible && (
+        <div className="absolute bottom-5 left-5 w-80 pointer-events-auto">
+          <div className="flex items-center gap-2 mb-1.5 px-1">
+            <span className="text-[#d4a843]/70 text-[8px] font-share tracking-[0.2em] uppercase">✦ chat.log</span>
+            <div className="flex-1 h-px bg-gradient-to-r from-[#d4a843]/30 to-transparent" />
+          </div>
+
+          <div className="max-h-48 overflow-y-auto flex flex-col gap-1.5 mb-2 pr-1 scrollbar-hide">
+            {chatMessages.map((msg, idx) => (
+              <div
+                key={idx}
+                className={`bg-[#050505]/80 border-l-2 p-2 backdrop-blur-sm hover:bg-[#0a0a0a]/90 transition-all ${
+                  msg.system ? "border-[#888]/40" : "border-[#d4a843]/40"
+                }`}
+              >
+                {!msg.system && (
+                  <div
+                    className={`font-share text-[9px] tracking-wide ${
+                      msg.isMe ? "text-[#d4a843]" : "text-white/50"
+                    }`}
+                  >
+                    {msg.isMe ? "➤ " : "  "}
+                    {msg.username}
+                  </div>
+                )}
+                <div
+                  className={`font-special text-sm mt-0.5 leading-relaxed break-words ${
+                    msg.system ? "text-white/60 italic" : "text-white/90"
+                  }`}
+                >
+                  {msg.message}
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendChat()}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              className={`flex-1 bg-[#050505]/90 border text-white font-special text-sm px-3 py-2 outline-none transition-all placeholder:text-white/20 ${
+                inputFocused
+                  ? "border-[#d4a843]/70 shadow-[0_0_6px_#d4a843]/20"
+                  : "border-white/10"
+              }`}
+              placeholder=">_ type message..."
+              maxLength={120}
+            />
+            <button
+              onClick={sendChat}
+              className="px-4 bg-[#d4a843]/10 hover:bg-[#d4a843]/20 text-[#d4a843] border border-[#d4a843]/30 font-share text-xs uppercase tracking-wider transition-all hover:shadow-[0_0_5px_#d4a843]/30"
+            >
+              send
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
