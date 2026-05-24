@@ -7,7 +7,6 @@ export default function Lobby({ visible }) {
     const [step, setStep] = useState("username");
     const [username, setUsername] = useState("");
     const [roomCode, setRoomCode] = useState("");
-    const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [cursorVisible, setCursorVisible] = useState(true);
 
@@ -43,7 +42,6 @@ export default function Lobby({ visible }) {
     useEffect(() => {
         if (visible && !prevVisibleRef.current) {
             setRoomCode("");
-            setError("");
             setIsSubmitting(false);
             setNameError("");
             setRoomCodeError("");
@@ -135,9 +133,8 @@ export default function Lobby({ visible }) {
         };
         const onError = ({ msg }) => {
             if (joinLobbyTimeoutRef.current) clearTimeout(joinLobbyTimeoutRef.current);
-            setError(msg);
             setIsSubmitting(false);
-            // Show error in the active step's error area
+            // Route the error to the current step’s error state
             if (step === "username") {
                 setAutoHideError(setNameError, msg, nameErrorTimeoutRef);
             } else {
@@ -145,9 +142,13 @@ export default function Lobby({ visible }) {
             }
         };
         const onDisconnect = () => {
-            setError("Connection lost – please refresh the page");
             setIsSubmitting(false);
-            setAutoHideError(setNameError, "⚠ Connection lost. Refresh the page.", nameErrorTimeoutRef);
+            const msg = "⚠ Connection lost. Refresh the page.";
+            if (step === "username") {
+                setAutoHideError(setNameError, msg, nameErrorTimeoutRef);
+            } else {
+                setAutoHideError(setRoomCodeError, msg, roomCodeErrorTimeoutRef);
+            }
         };
 
         socket.on("lobby_joined", onLobbyJoined);
@@ -159,7 +160,7 @@ export default function Lobby({ visible }) {
             socket.off("error", onError);
             socket.off("disconnect", onDisconnect);
         };
-    }, [step]); // re-run when step changes so error goes to correct field
+    }, [step]); // re‑run when step changes so error goes to correct field
 
     const handleSetUsername = () => {
         if (nameErrorTimeoutRef.current) clearTimeout(nameErrorTimeoutRef.current);
@@ -196,7 +197,7 @@ export default function Lobby({ visible }) {
         const timeout = setTimeout(() => {
             if (isSubmitting) {
                 setIsSubmitting(false);
-                setError("Request timed out – try again");
+                setAutoHideError(setRoomCodeError, "Request timed out – try again", roomCodeErrorTimeoutRef);
             }
         }, 10000);
         socket.emit("create_room", () => clearTimeout(timeout));
@@ -220,7 +221,7 @@ export default function Lobby({ visible }) {
         const timeout = setTimeout(() => {
             if (isSubmitting) {
                 setIsSubmitting(false);
-                setError("Request timed out – try again");
+                setAutoHideError(setRoomCodeError, "Request timed out – try again", roomCodeErrorTimeoutRef);
             }
         }, 10000);
         socket.emit("join_room", { code: roomCode.toUpperCase() }, () => clearTimeout(timeout));
@@ -239,7 +240,6 @@ export default function Lobby({ visible }) {
     const goBackToIdentity = () => {
         setStep("username");
         setRoomCode("");
-        setError("");
         if (roomCodeErrorTimeoutRef.current) clearTimeout(roomCodeErrorTimeoutRef.current);
         setRoomCodeError("");
     };
@@ -330,11 +330,7 @@ export default function Lobby({ visible }) {
                                     "► CONNECT"
                                 )}
                             </button>
-                            {error && step === "username" && (
-                                <div className="font-share text-[11px] text-red-400/90 mt-3 text-center bg-red-950/20 py-2 border-l-2 border-red-500">
-                                    ⚠ {error}
-                                </div>
-                            )}
+                            {/* Global error display removed – now handled by nameError above */}
                         </div>
                     )}
 
@@ -401,11 +397,7 @@ export default function Lobby({ visible }) {
                                     {roomCodeError}
                                 </div>
                             )}
-                            {error && step === "room" && (
-                                <div className="font-share text-[11px] text-red-400/90 mt-3 text-center bg-red-950/20 py-2 border-l-2 border-red-500">
-                                    ⚠ {error}
-                                </div>
-                            )}
+                            {/* Global error display removed – now handled by roomCodeError above */}
                         </div>
                     )}
                 </div>
